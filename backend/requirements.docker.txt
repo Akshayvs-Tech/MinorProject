@@ -1,0 +1,55 @@
+# =============================================================================
+# backend/requirements.docker.txt
+# Docker-specific requirements — fixes platform compatibility issues.
+#
+# Key differences from the root requirements.txt:
+#   1. mediapipe: unpinned to >=0.10.13 so pip picks the right wheel per arch
+#      (0.10.33 only has x86_64 wheels; arm64/Apple Silicon needs >=0.10.13,<1.0)
+#   2. pytorchvideo: REMOVED — only used in slowfast_model/demo.py (a dev script),
+#      not imported by the production pipeline at all.
+#   3. opencv-python → opencv-python-headless: no GUI needed on a server,
+#      avoids libGL dependency issues on slim images.
+# All other versions stay pinned for reproducibility.
+# =============================================================================
+
+# ── ML / CV ──────────────────────────────────────────────────────────────────
+ultralytics==8.4.21
+insightface==0.7.3
+deep-sort-realtime==1.3.2
+
+# Headless OpenCV — no display server needed in Docker
+opencv-python-headless==4.13.0.92
+
+numpy==2.2.6
+torch==2.10.0
+torchvision==0.25.0
+scikit-learn==1.7.2
+scipy==1.15.3
+onnxruntime==1.23.2
+yacs==0.1.8
+h5py
+tensorboard==2.20.0
+matplotlib==3.10.8
+
+# mediapipe: allow pip to pick the correct wheel for the build platform
+# (0.10.33 wheel only exists for linux/amd64; arm64 builds need 0.10.13-0.10.18)
+mediapipe>=0.10.13,<1.0.0
+
+# pytorchvideo intentionally excluded — only used in slowfast_model/demo.py
+# which is a development/training script, not part of the production pipeline.
+
+# ── Backend / API ─────────────────────────────────────────────────────────────
+fastapi==0.115.0
+uvicorn[standard]==0.30.0
+python-multipart==0.0.9
+motor==3.6.0
+pymongo==4.9.2
+dnspython==2.6.1
+python-dotenv==1.0.0
+pydantic>=2.0.0
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+
+# ── Utilities ─────────────────────────────────────────────────────────────────
+gdown==5.2.1
+setuptools==69.5.1

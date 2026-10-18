@@ -1,0 +1,54 @@
+# =============================================================================
+# docker-compose.override.yml — Development Mode (Hot Reload)
+# =============================================================================
+# This file is automatically merged with docker-compose.yml when you run:
+#   docker compose up
+#
+# It adds hot reload for local development.
+# For production, use: docker compose -f docker-compose.yml up
+# =============================================================================
+
+services:
+
+  backend:
+    # Override the CMD to add --reload flag (Uvicorn watches for file changes)
+    command: >
+      uvicorn backend.app:app
+      --host 0.0.0.0
+      --port 8000
+      --reload
+      --reload-dir /app/backend
+      --reload-dir /app/ml_pipeline
+
+    # Mount local source code as a volume so changes are reflected instantly
+    # without rebuilding the image
+    volumes:
+      # Application source code (read-only mounts for safety)
+      - ./backend:/app/backend:ro
+      - ./ml_pipeline:/app/ml_pipeline:ro
+      # Keep yolov8n.pt accessible
+      - ./yolov8n.pt:/app/yolov8n.pt:ro
+      # Data and model cache (still use named volumes)
+      - video_data:/app/data
+      - arcface_models:/models
+
+    environment:
+      # Extra debug flags useful in dev
+      PYTHONUNBUFFERED: "1"
+
+  frontend:
+    # In dev mode we bind-mount source code and run the Next.js dev server.
+    # We do NOT set a build target here — the full prod image is still built
+    # by docker compose build; the command override is what switches to dev.
+    command: npm run dev
+
+    # Mount local frontend source for instant hot reload
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules    # Keep container's node_modules (don't override with host)
+      - /app/.next           # Keep Next.js build cache inside container
+
+    environment:
+      NODE_ENV: development
+      BACKEND_URL: http://backend:8000
+      NEXT_TELEMETRY_DISABLED: "1"

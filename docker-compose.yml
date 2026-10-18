@@ -1,0 +1,97 @@
+# =============================================================================
+# docker-compose.yml — Miniproject Production Configuration
+# =============================================================================
+# Start everything: docker compose up --build
+# Stop everything:  docker compose down
+# =============================================================================
+
+services:
+
+  # ── Backend + ML Service ──────────────────────────────────────────────────
+  backend:
+    build:
+      context: .                     # project root (Miniproject/)
+      dockerfile: backend/Dockerfile
+    image: miniproject-backend:latest
+    container_name: miniproject_backend
+    restart: unless-stopped
+
+    environment:
+      # MongoDB Atlas connection string — set in your .env file
+      MONGO_URI: ${MONGO_URI}
+      DB_NAME: ${DB_NAME:-person_finder}
+
+      # JWT configuration
+      JWT_SECRET: ${JWT_SECRET}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-60}
+
+      # Python settings
+      PYTHONUNBUFFERED: "1"
+      PYTHONDONTWRITEBYTECODE: "1"
+
+      # ArcFace model cache — maps to /models volume
+      INSIGHTFACE_HOME: /models
+
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+
+    volumes:
+      # Named volume for input/output videos — persists between restarts
+      - video_data:/app/data
+      # Named volume for downloaded ML model weights (ArcFace buffalo_l ~300MB)
+      # This prevents re-downloading on every container restart
+      - arcface_models:/models
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 300s  # ArcFace model downloads ~280MB on first run (3-5 min)
+      retries: 10
+
+    networks:
+      - app_network
+
+  # ── Frontend Service ──────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        # Tells Next.js where the backend is at BUILD time (for rewrites)
+        BACKEND_URL: http://backend:8000
+    image: miniproject-frontend:latest
+    container_name: miniproject_frontend
+    restart: unless-stopped
+
+    environment:
+      NODE_ENV: production
+      NEXT_TELEMETRY_DISABLED: "1"
+      # BACKEND_URL is also passed at runtime for reference
+      BACKEND_URL: http://backend:8000
+
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+
+    depends_on:
+      backend:
+        condition: service_healthy
+
+    networks:
+      - app_network
+
+# ── Networks ──────────────────────────────────────────────────────────────────
+networks:
+  app_network:
+    driver: bridge
+
+# ── Volumes ───────────────────────────────────────────────────────────────────
+volumes:
+  # Stores uploaded input videos and processed output videos
+  video_data:
+    driver: local
+
+  # Stores downloaded ArcFace (buffalo_l) model weights
+  # This way they only download once and persist between restarts
+  arcface_models:
+    driver: local

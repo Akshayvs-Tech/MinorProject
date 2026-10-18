@@ -1,0 +1,27 @@
+# Node modules - reinstalled inside container
+node_modules/
+npm-debug.log*
+
+# Next.js build output - rebuilt inside container
+.next/
+out/
+
+# Secrets
+.env
+.env.local
+.env.*.local
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+.DS_Store
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Logs
+*.log

@@ -1,0 +1,42 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Secrets - never bake into image
+.env
+*.env
+
+# Data - mounted as volumes
+data/inputs/*
+data/outputs/*
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+.DS_Store
+
+# Logs
+*.log
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
+
+# Node (shouldn't be here but just in case)
+node_modules/
+
+# Frontend (not needed in backend image)
+frontend/
